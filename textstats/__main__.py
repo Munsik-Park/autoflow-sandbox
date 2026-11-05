@@ -20,7 +20,7 @@ def main(argv=None):
             reason = e.strerror
         else:
             reason = str(e)
-        # The path is escaped as the top words are: a newline in it would split this line.
+        # Escaped: a newline in the path would split this line.
         print(f"textstats: {args[0].translate(_CONTROL_ESCAPES)}: {reason}", file=sys.stderr)
         return 1
     print(f"words: {word_count(text)}")
