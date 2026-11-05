@@ -48,6 +48,36 @@ class LineCount(unittest.TestCase):
     def test_empty(self):
         self.assertEqual(line_count(""), 0)
 
+    def test_form_feed_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\x0cb"), 1)
+
+    def test_vertical_tab_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\x0bb"), 1)
+
+    def test_file_separator_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\x1cb"), 1)
+
+    def test_next_line_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\x85b"), 1)
+
+    def test_line_separator_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\N{LINE SEPARATOR}b"), 1)
+
+    def test_group_separator_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\x1db"), 1)
+
+    def test_record_separator_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\x1eb"), 1)
+
+    def test_paragraph_separator_does_not_end_a_line(self):
+        self.assertEqual(line_count("a\N{PARAGRAPH SEPARATOR}b"), 1)
+
+    def test_crlf_ends_a_line(self):
+        self.assertEqual(line_count("a\r\nb"), 2)
+
+    def test_cr_ends_a_line(self):
+        self.assertEqual(line_count("a\rb"), 2)
+
 
 class MeanWordLength(unittest.TestCase):
     def test_mean(self):

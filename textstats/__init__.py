@@ -8,8 +8,16 @@ def word_count(text: str) -> int:
 
 
 def line_count(text: str) -> int:
-    """The number of lines in `text`. A final newline does not start another line."""
-    return len(text.splitlines())
+    r"""The number of lines in `text`.
+
+    A line ends at "\n", "\r\n" or "\r" and nowhere else; other characters such
+    as form feed or U+2028 LINE SEPARATOR do not end a line. A final line ending
+    does not start another line, and "" has 0 lines.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    if not text:
+        return 0
+    return text.count("\n") + (0 if text.endswith("\n") else 1)
 
 
 def mean_word_length(text: str) -> float:
