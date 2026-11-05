@@ -115,6 +115,39 @@ class TopWordsCli(unittest.TestCase):
     def test_no_words_prints_the_label_and_its_trailing_space_only(self):
         self.assertIn("top words: ", self.cli_lines('... "" ()\n'))
 
+    def test_control_characters_are_escaped_and_printable_words_print_unchanged(self):
+        # Every C0 control, DEL and C1 control that can sit inside a word: the others
+        # (09-0d, 1c-1f, 85) are whitespace to str.split().
+        c0 = [*range(0x00, 0x09), *range(0x0E, 0x1C)]
+        c1 = [0x7F, *range(0x80, 0x85), *range(0x86, 0xA0)]
+        c0_word = "\x1b[2J\x1b]0;x\x07" + "".join(map(chr, c0))
+        persian_with_zwnj = "می‌خواهم"
+        c1_word = "\x9b2J" + "".join(map(chr, c1))
+        text = " ".join([c0_word] * 3 + [persian_with_zwnj] * 2 + [c1_word]) + "\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "sample.txt")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            result = subprocess.run(
+                [sys.executable, "-m", "textstats", path],
+                capture_output=True,
+                check=True,
+                cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                env=dict(os.environ, PYTHONIOENCODING="utf-8"),
+            )
+        stdout = result.stdout.decode("utf-8")
+        c0_printed = "\\x1b[2j\\x1b]0;x\\x07" + "".join("\\x%02x" % c for c in c0)
+        c1_printed = "\\x9b2j" + "".join("\\x%02x" % c for c in c1)
+        self.assertIn(
+            f"top words: {c0_printed} (3), {persian_with_zwnj} (2), {c1_printed} (1)",
+            stdout.splitlines(),
+        )
+        raw = [
+            c for c in stdout.replace(os.linesep, "\n")
+            if c != "\n" and (c < " " or "\x7f" <= c <= "\x9f")
+        ]
+        self.assertEqual(raw, [], "raw control characters in stdout")
+
 
 if __name__ == "__main__":
     unittest.main()
