@@ -12,8 +12,17 @@ def main(argv=None):
     if len(args) != 1:
         print("usage: python -m textstats FILE", file=sys.stderr)
         return 2
-    with open(args[0], encoding="utf-8") as f:
-        text = f.read()
+    try:
+        with open(args[0], encoding="utf-8") as f:
+            text = f.read()
+    except (OSError, UnicodeDecodeError) as e:
+        if isinstance(e, OSError) and e.strerror is not None:
+            reason = e.strerror
+        else:
+            reason = str(e)
+        # Escaped: a newline in the path would split this line.
+        print(f"textstats: {args[0].translate(_CONTROL_ESCAPES)}: {reason}", file=sys.stderr)
+        return 1
     print(f"words: {word_count(text)}")
     print(f"lines: {line_count(text)}")
     print(f"mean word length: {mean_word_length(text):.2f}")
