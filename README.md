@@ -2,7 +2,7 @@
 
 A small repository for trying [autoflow-coordinator](https://github.com/Munsik-Park/autoflow-coordinator) and [autoflow-ide](https://github.com/Munsik-Park/Autoflow-ide) on short runs.
 
-`textstats` counts the words, lines and mean word length of a text.
+`textstats` counts the words, lines and mean word length of a text, and lists its most frequent words with `top_words(text, n)`.
 
 ```
 python -m textstats FILE
