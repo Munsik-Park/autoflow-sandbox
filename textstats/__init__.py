@@ -3,7 +3,7 @@
 
 def word_count(text: str) -> int:
     """The number of words in `text`."""
-    return len(text.split(" "))
+    return len(text.split())
 
 
 def line_count(text: str) -> int:
