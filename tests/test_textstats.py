@@ -149,5 +149,64 @@ class TopWordsCli(unittest.TestCase):
         self.assertEqual(raw, [], "raw control characters in stdout")
 
 
+class FileCli(unittest.TestCase):
+    def run_cli(self, path):
+        return subprocess.run(
+            [sys.executable, "-m", "textstats", path],
+            capture_output=True,
+            text=True,
+            cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        )
+
+    def assert_error_line(self, path, printed_path):
+        result = self.run_cli(path)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stdout, "")
+        lines = result.stderr.splitlines()
+        self.assertEqual(len(lines), 1, result.stderr)
+        self.assertEqual(result.stderr, lines[0] + "\n")
+        prefix = f"textstats: {printed_path}: "
+        self.assertTrue(lines[0].startswith(prefix), lines[0])
+        self.assertNotEqual(lines[0][len(prefix):].strip(), "", lines[0])
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_missing_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "missing.txt")
+            self.assert_error_line(path, path)
+
+    def test_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assert_error_line(tmp, tmp)
+
+    def test_file_not_utf8(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "latin1.txt")
+            with open(path, "wb") as f:
+                f.write(b"caf\xe9\n")
+            self.assert_error_line(path, path)
+
+    def test_control_characters_in_missing_path_are_escaped(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "nope\nb\x1b[31mc")
+            self.assert_error_line(path, os.path.join(tmp, "nope\\x0ab\\x1b[31mc"))
+
+    def test_readable_file_output_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "sample.txt")
+            with open(path, "w", encoding="utf-8") as f:
+                f.write("hello world\nsecond line\n")
+            result = self.run_cli(path)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(
+            result.stdout,
+            "words: 4\n"
+            "lines: 2\n"
+            "mean word length: 5.00\n"
+            "top words: hello (1), line (1), second (1)\n",
+        )
+        self.assertEqual(result.stderr, "")
+
+
 if __name__ == "__main__":
     unittest.main()
